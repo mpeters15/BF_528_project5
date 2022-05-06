@@ -19,6 +19,9 @@ process getFastqs {
 process runFastqc {
   beforeScript 'module load fastqc'
 
+  executor "sge"
+  clusterOptions "-P bf528 -pe omp 16"
+
   input:
   path fastqs
     
@@ -26,7 +29,7 @@ process runFastqc {
   path "*_fastqc.*", emit: fastqc_dir
 
   """
-  fastqc -t 4 -o . ./*
+  fastqc -t 16 -o . ./*
   """
 }
 
