@@ -17,7 +17,7 @@ process getFastqs {
 
 
 process runFastqc {
-  beforeScript 'module load fastqc'
+  beforeScript 'source /etc/bashrc; module load fastqc'
 
   executor "sge"
   clusterOptions "-P bf528 -pe omp 16"
