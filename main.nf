@@ -31,7 +31,8 @@ process runFastqc {
 }
 
 
-process runSTAR {
+process run
+{
   publishDir 'nf_out/bams', pattern: "*.bam", mode: 'copy'
 
   beforeScript 'source /etc/bashrc; module load star/2.6.0c'
@@ -40,6 +41,7 @@ process runSTAR {
   maxRetries 3
 
   executor "sge"
+  cpus 8
   clusterOptions "-P bf528 -pe omp 16"
 
   input:
