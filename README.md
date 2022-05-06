@@ -21,6 +21,6 @@ The Data Curator and Programmer roles are performed in this project. NextFlow [D
 2. Run:
     ```
     module load nextflow
-    nextflow run http://github.com/mpeters15/BF_528_project5 -r main
+    nice nextflow run http://github.com/mpeters15/BF_528_project5 -r <latest commit hash>
     ```
 3. Outputs will be stored in `nf_out`
