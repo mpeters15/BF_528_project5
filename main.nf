@@ -212,14 +212,15 @@ process makeBoxPlots {
           x = "Sample",
           y = "Gene Counts (log10)",
           fill="Mechanism of Action"
-          )
+          ) +
+        theme(axis.text.x = element_text(angle = 45, hjust=1))
 
   ggsave( paste("boxplot", "jpeg", sep = "."), 
           plot = last_plot(), device = jpeg, width = 10, height = 10, units = 'in', dpi = 300, )
   """
 }
 
-process lastPart {
+process DESeq {
   publishDir 'nf_out/DESEQ', mode: 'copy'
 
   beforeScript 'module load R'
@@ -294,24 +295,24 @@ process lastPart {
 
   res_AhR <- results(DESeqDataSet1, contrast=c('mode_of_action','AhR','Control'))
   res_AhR <- lfcShrink(DESeqDataSet1, 2)
-  write.csv(res_AhR, 'DESeq_AhR_Rresults.csv')
-  write.csv(res_AhR[ order(res_AhR\$padj), ], 'AhR_resultsPADJ.csv')
+  write.csv(res_AhR, 'DESeq_AhR_Results.csv')
+  write.csv(res_AhR[ order(res_AhR\$padj), ], 'DESeq_AhR_Results_PADJ.csv')
   print("Number of significant genes at threshold for AhR:")
   print( length(which(res_AhR\$padj < 0.05)) )
 
 
   res_CAR_PXR <- results(DESeqDataSet2, contrast=c('mode_of_action','CAR/PXR','Control'))
   res_CAR_PXR <- lfcShrink(DESeqDataSet2, 2)
-  write.csv(res_CAR_PXR, 'DESeq_CAR_PXR_results.csv')
-  write.csv(res_CAR_PXR[ order(res_CAR_PXR\$padj), ], 'CAR_PXR_resultsPADJ.csv')
+  write.csv(res_CAR_PXR, 'DESeq_CAR_PXR_Results.csv')
+  write.csv(res_CAR_PXR[ order(res_CAR_PXR\$padj), ], 'DESeq_CAR_PXR_Results_PADJ.csv')
   print("Number of significant genes at threshold for CAR/PXR:")
   print( length(which(res_CAR_PXR\$padj < 0.05)) )
 
 
   res_PPARA <- results(DESeqDataSet3, contrast=c('mode_of_action','PPARA','Control'))
   res_PPARA <- lfcShrink(DESeqDataSet3, 2)
-  write.csv(res_PPARA, 'DESeq_PPARA_results.csv')
-  write.csv(res_PPARA[ order(res_PPARA\$padj), ], 'PPARA_resultsPADJ.csv')
+  write.csv(res_PPARA, 'DESeq_PPARA_Results.csv')
+  write.csv(res_PPARA[ order(res_PPARA\$padj), ], 'DESeq_PPARA_Results_PADJ.csv')
   print("Number of significant genes at threshold for PPARA:")
   print( length(which(res_PPARA\$padj < 0.05)) )
 
@@ -333,17 +334,6 @@ process lastPart {
   PPARA_dim = dim(res_PPARA[ res_PPARA\$padj<0.05, ])[1]
   PPARA_top10 = row.names(res_PPARA)[1:10]
 
-  final_df = data.frame(
-    col1=c(AhR_dim,AhR_top10),
-    col2=c(CAR_PXR_dim,CAR_PXR_top10),
-    col3=c(PPARA_dim,PPARA_top10)
-    )
-    
-  names(final_df) = c("AhR", "CAR/PXR", "PPARA")
-  rownames(final_df) = c("Number of Significant Genes:", "1", "2", "3", "4", "5", "6", "7", "8", "9", "10")
-  write.csv(final_df, "SignificantGeneCountAndTopTenSignificantGenes.csv")
-
-  # Histograms of FC Values
   graph_df <- as.data.frame(res_AhR) %>% 
     mutate(Group = "AhR") %>% 
       bind_rows(as.data.frame(res_CAR_PXR) %>% 
@@ -351,8 +341,6 @@ process lastPart {
         mutate(Group = "PPARA")) %>%
           filter(padj < 0.05)
   
-  print(head(graph_df))
-
   graph_df %>%
     ggplot() + 
     geom_histogram(aes(x = log2FoldChange, fill = Group), bins = 50) + 
@@ -371,15 +359,14 @@ process lastPart {
     y = "Adjusted p-value") + 
     theme(legend.position="none")
 
-  ggsave("log2foldchange.png")  
+  ggsave("Log2FCpoint.png")  
 
   cts = counts(DESeqDataSet1, normalized=TRUE)
-  write.csv(cts, 'AhR_deseq_norm_counts.csv')
+  write.csv(cts, 'AhR_DESeq_norm_cts.csv')
   cts = counts(DESeqDataSet2, normalized=TRUE)
-  write.csv(cts, 'CAR_PXR_deseq_norm_counts.csv')
+  write.csv(cts, 'CAR_PXR_DESeq_norm_cts.csv')
   cts = counts(DESeqDataSet3, normalized=TRUE)
-  write.csv(cts, 'PPARA_deseq_norm_counts.csv')
-
+  write.csv(cts, 'PPARA_DESeq_norm_cts.csv')
   """
 }
 
@@ -403,5 +390,5 @@ workflow {
   
   makeBoxPlots( combineFeatureCounts.out.featureCounts_combined.collect() )
   
-  lastPart( combineFeatureCounts.out.featureCounts_combined.collect() )
+  DESeq( combineFeatureCounts.out.featureCounts_combined.collect() )
 }
